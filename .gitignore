@@ -1,0 +1,34 @@
+# --- Client-Side (Node.js/React) ---
+client/node_modules/
+client/.pnp/
+client/.pnp.js
+client/dist/
+client/build/
+client/.env*.local
+
+# --- Backend Secrets & Configs ---
+local.settings.json
+.env
+.venv/
+env/
+ENV/
+
+# --- Python System Files ---
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+.ipynb_checkpoints/
+
+# --- OS Junk Files ---
+.DS_Store
+Thumbs.db

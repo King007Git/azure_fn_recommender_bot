@@ -1,0 +1,8 @@
+azure-functions
+langchain
+langchain-huggingface
+langchain-pinecone
+pinecone-client
+sentence-transformers
+pandas
+langgraph

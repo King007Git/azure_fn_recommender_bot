@@ -1,0 +1,14 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+       "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+       "FUNCTIONS_WORKER_RUNTIME": "python",
+       "PINECONE_API_KEY": "****-****-****-****",
+       "PINECONE_INDEX_NAME": "****"
+    },
+  "Host": {
+    "LocalHttpPort": 8000,
+    "CORS": "*",
+    "CORSCredentials": false
+  }
+}
