@@ -32,3 +32,7 @@ ENV/
 # --- OS Junk Files ---
 .DS_Store
 Thumbs.db
+
+
+# -- embedding model --
+model/

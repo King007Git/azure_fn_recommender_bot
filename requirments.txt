@@ -6,3 +6,4 @@ pinecone-client
 sentence-transformers
 pandas
 langgraph
+langchain-google-genai

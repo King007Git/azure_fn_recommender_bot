@@ -27,9 +27,17 @@ def retrieve_endpoint(req: func.HttpRequest) -> func.HttpResponse:
         threshold = req_json.get("threshold", 0.90) 
         
         results = agent.retrieve(query, top_k, threshold)
+        
         return func.HttpResponse(json.dumps({"data": results}), mimetype="application/json")
+        
     except Exception as e:
-        return func.HttpResponse(f"Retrieval Error: {str(e)}", status_code=500)
+        error_msg = f"Retrieval Error: {str(e)}"
+        print(f"ERROR LOG: {error_msg}")
+        return func.HttpResponse(
+            json.dumps({"error": error_msg}), 
+            status_code=500, 
+            mimetype="application/json"
+        )
 
 @app.route(route="feedback", methods=["POST"])
 def feedback_endpoint(req: func.HttpRequest) -> func.HttpResponse:
