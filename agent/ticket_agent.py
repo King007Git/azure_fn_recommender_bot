@@ -4,9 +4,11 @@ import pandas as pd
 from typing import TypedDict, List, Dict, Any
 from pinecone import Pinecone
 from langchain_huggingface import HuggingFaceEmbeddings
+from langgraph.graph import StateGraph, START, END
+
+# New imports for Generative Answer
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
-from langgraph.graph import StateGraph, START, END
 
 from config import settings
 
@@ -23,22 +25,11 @@ class TicketAgent:
         self.index = self.pc.Index(settings.PINECONE_INDEX_NAME)
         self.embeddings = HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL)
         
-        # Initialize Gemini Model
-        self.llm = ChatGoogleGenerativeAI(
-            model=settings.GOOGLE_MODEL, 
-            api_key=settings.GOOGLE_API_KEY,
-            temperature=0.2 # Low temperature for factual summarization
-        )
-        
         # Build LangGraph for Retrieval Workflow
         workflow = StateGraph(GraphState)
         workflow.add_node("retrieve", self._retrieve_node)
-        workflow.add_node("summarize", self._summarize_node)
-        
-        # Define the flow: START -> retrieve -> summarize -> END
         workflow.add_edge(START, "retrieve")
-        workflow.add_edge("retrieve", "summarize")
-        workflow.add_edge("summarize", END)
+        workflow.add_edge("retrieve", END)
         self.app = workflow.compile()
 
     def _retrieve_node(self, state: GraphState) -> Dict:
@@ -54,53 +45,13 @@ class TicketAgent:
         for match in res["matches"]:
             if match["score"] >= state["threshold"]:
                 valid_matches.append({
+                    "id": match["id"], # Returning the ID so you can easily reference it for removal later
                     "score": match["score"],
                     "short_description": match["metadata"].get("short_description", ""),
                     "resolution": match["metadata"].get("resolution", "")
                 })
         return {"results": valid_matches}
 
-    def _summarize_node(self, state: GraphState) -> Dict:
-        """LangGraph node to summarize the retrieved resolutions using Gemini."""
-        results = state.get("results", [])
-        if not results:
-            return {"results": []} 
-        
-        prompt = PromptTemplate.from_template(
-            "You are an expert IT support assistant. Summarize the following IT resolution "
-            "into a concise, clear, and actionable step or short paragraph. "
-            "Remove unnecessary filler words like 'Root Cause Category' or 'Event Description'.\n\n"
-            "Original Resolution:\n{resolution}"
-        )
-        
-        chain = prompt | self.llm
-        batch_inputs = [{"resolution": r["resolution"]} for r in results]
-        
-        try:
-            llm_responses = chain.batch(batch_inputs)
-            
-            for idx, response in enumerate(llm_responses):
-                # Ensure we handle LangChain's AIMessage object correctly
-                if hasattr(response, 'content'):
-                    # If content is a string
-                    if isinstance(response.content, str):
-                        summary = response.content.strip()
-                    # If content is a list (sometimes happens with newer Gemini tool-calling formats)
-                    elif isinstance(response.content, list):
-                        summary = " ".join([item.get("text", "") for item in response.content if item.get("type") == "text"]).strip()
-                    else:
-                        summary = str(response.content).strip()
-                else:
-                    summary = str(response).strip()
-                    
-                results[idx]["resolution"] = summary
-                
-        except Exception as e:
-            # Raise the exception so LangGraph/Azure can catch it and report it to the user
-            raise Exception(f"Failed to summarize with GenAI: {str(e)}")
-        
-        return {"results": results}
-    
     async def ingest_csv(self, file_path: str):
         """Asynchronously read CSV and upload vectors in batches."""
         loop = asyncio.get_event_loop()
@@ -129,6 +80,7 @@ class TicketAgent:
             self.index.upsert(vectors=upsert_data)
 
     def retrieve(self, query: str, top_k: int, threshold: float) -> List:
+        """Triggers the LangGraph workflow."""
         initial_state = {"query": query, "top_k": top_k, "threshold": threshold, "results": []}
         result = self.app.invoke(initial_state)
         return result["results"]
@@ -141,3 +93,32 @@ class TicketAgent:
             query_vec, 
             {"short_description": ticket_description, "resolution": resolution, "type": "feedback_boost"}
         )])
+
+    def remove_docs(self, doc_ids: List[str]):
+        """Removes specific documents from the Pinecone index by their IDs."""
+        self.index.delete(ids=doc_ids)
+
+    def generate_answer(self, resolution: str) -> str:
+        """Uses Google Gemini to generate a summary and step-by-step guide from a raw resolution."""
+        llm = ChatGoogleGenerativeAI(
+            model=settings.GOOGLE_MODEL, 
+            temperature=0.2,
+            google_api_key=settings.GOOGLE_API_KEY
+        )
+        
+        prompt_template = """
+        You are an expert IT support assistant. You have been given the raw resolution notes from a closed ticket.
+        
+        Raw Resolution Notes:
+        {resolution}
+        
+        Based ONLY on the notes above, please generate:
+        1. A brief, 1-2 sentence summary of what was fixed.
+        2. A clear, numbered, step-by-step guide on how to resolve the incident. If the steps are implied rather than stated, deduce the most logical standard steps based on the resolution context.
+        """
+        
+        prompt = PromptTemplate.from_template(prompt_template)
+        chain = prompt | llm
+        
+        response = chain.invoke({"resolution": resolution})
+        return response.content

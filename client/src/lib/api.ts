@@ -8,7 +8,6 @@ export const api = {
   },
   
   retrieve: async (query: string, top_k: number, threshold: number) => {
-    // threshold is sent as decimal (e.g., 50% -> 0.50)
     const res = await fetch(`${BASE_URL}/retrieve`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -26,7 +25,28 @@ export const api = {
     });
     
     if (!res.ok) throw new Error('Feedback submission failed');
-    
     return res.text(); 
+  },
+
+  remove: async (doc_ids: string[]) => {
+    const res = await fetch(`${BASE_URL}/remove`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doc_ids })
+    });
+    
+    if (!res.ok) throw new Error('Removal failed');
+    return res.text();
+  },
+
+  generateAnswer: async (resolution: string) => {
+    const res = await fetch(`${BASE_URL}/generate_answer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolution })
+    });
+    
+    if (!res.ok) throw new Error('Generation failed');
+    return res.json();
   }
 };

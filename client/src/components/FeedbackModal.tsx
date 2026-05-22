@@ -10,28 +10,34 @@ interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
   originalQuery: string;
+  initialShortDesc?: string;
+  initialResolution?: string;
 }
 
-export default function FeedbackModal({ isOpen, onClose, originalQuery }: FeedbackModalProps) {
+export default function FeedbackModal({ 
+  isOpen, 
+  onClose, 
+  originalQuery, 
+  initialShortDesc, 
+  initialResolution 
+}: FeedbackModalProps) {
   const [shortDesc, setShortDesc] = useState<string>("");
   const [resolution, setResolution] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen) {
-      setShortDesc(originalQuery);
-      setResolution("");
+      setShortDesc(initialShortDesc || originalQuery);
+      setResolution(initialResolution || "");
     }
-  }, [isOpen, originalQuery]);
+  }, [isOpen, originalQuery, initialShortDesc, initialResolution]);
 
   const handleSubmit = async () => {
     if (!resolution.trim()) return;
     setIsSubmitting(true);
     try {
       const responseText = await api.feedback(originalQuery, shortDesc, resolution);
-      
       toast.success(responseText);
-      
       onClose();
     } catch (err) {
       toast.warning("Failed to submit feedback. Please try again.");
@@ -65,6 +71,7 @@ export default function FeedbackModal({ isOpen, onClose, originalQuery }: Feedba
               value={resolution} 
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setResolution(e.target.value)} 
               placeholder="How was this resolved?"
+              rows={4}
               required
             />
           </div>
