@@ -48,7 +48,12 @@ class TicketAgent:
                     "id": match["id"], # Returning the ID so you can easily reference it for removal later
                     "score": match["score"],
                     "short_description": match["metadata"].get("short_description", ""),
-                    "resolution": match["metadata"].get("resolution", "")
+                    "resolution": match["metadata"].get("resolution", ""),
+                    "desc": match['metadata'].get('description',''),
+                    "priority": match['metadata'].get('priority',''),
+                    "issue_desc": match['metadata'].get('issue_desc',''),
+                    "rca": match['metadata'].get('rca',''),
+                    "workaround": match['metadata'].get('workaround','')
                 })
         return {"results": valid_matches}
 
@@ -64,10 +69,15 @@ class TicketAgent:
         vectors = []
         
         for _, row in df.iterrows():
-            text_to_embed = str(row['Short description'])
+            text_to_embed = str(row['Short Description'])
             metadata = {
                 "short_description": text_to_embed,
-                "resolution": str(row.get('Resolution Note', ''))
+                "description": str(row.get('Description', '')),
+                "priority": str(row.get('Priority', '')),
+                "resolution": str(row.get('Resolution Notes', '')),
+                "issue_desc": str(row.get('Issue Description', '')),
+                "rca": str(row.get('RCA','')),
+                "workaround": str(row.get('Workaround',''))
             }
             vectors.append({"id": str(uuid.uuid4()), "text": text_to_embed, "metadata": metadata})
             
@@ -85,21 +95,32 @@ class TicketAgent:
         result = self.app.invoke(initial_state)
         return result["results"]
 
-    def feedback(self, query: str, ticket_description: str, resolution: str):
-        """Embeds the user's specific phrase to guarantee a future match."""
+    def feedback(self, query: str, short_desc: str, resolution: str, desc: str, priority: str, issue_desc: str, rca: str, workaround: str):
         query_vec = self.embeddings.embed_query(query)
+        
+        metadata = {
+            "short_description": short_desc,
+            "description": desc,
+            "priority": priority,
+            "resolution": resolution,
+            "issue_desc": issue_desc,
+            "rca": rca,
+            "workaround": workaround,
+            "type": "feedback_boost"
+        }
+        
         self.index.upsert(vectors=[(
             str(uuid.uuid4()), 
             query_vec, 
-            {"short_description": ticket_description, "resolution": resolution, "type": "feedback_boost"}
+            metadata
         )])
 
     def remove_docs(self, doc_ids: List[str]):
         """Removes specific documents from the Pinecone index by their IDs."""
         self.index.delete(ids=doc_ids)
 
-    def generate_answer(self, resolution: str) -> str:
-        """Uses Google Gemini to generate a summary and step-by-step guide from a raw resolution."""
+    def generate_answer(self, issue_desc: str, rca: str, resolution: str, workaround: str) -> str:
+        """Uses Google Gemini to generate a summary and step-by-step guide from full ticket details."""
         llm = ChatGoogleGenerativeAI(
             model=settings.GOOGLE_MODEL, 
             temperature=0.2,
@@ -107,18 +128,32 @@ class TicketAgent:
         )
         
         prompt_template = """
-        You are an expert IT support assistant. You have been given the raw resolution notes from a closed ticket.
+        You are an expert IT support assistant. You have been given the details of a closed ticket.
         
-        Raw Resolution Notes:
+        Issue Description:
+        {issue_desc}
+        
+        Root Cause Analysis (RCA):
+        {rca}
+        
+        Resolution Notes:
         {resolution}
         
-        Based ONLY on the notes above, please generate:
-        1. A brief, 1-2 sentence summary of what was fixed.
+        Workaround:
+        {workaround}
+        
+        Based ONLY on the provided notes above, please generate:
+        1. A brief, 1-2 sentence summary of what the issue was and how it was fixed.
         2. A clear, numbered, step-by-step guide on how to resolve the incident. If the steps are implied rather than stated, deduce the most logical standard steps based on the resolution context.
         """
         
         prompt = PromptTemplate.from_template(prompt_template)
         chain = prompt | llm
         
-        response = chain.invoke({"resolution": resolution})
+        response = chain.invoke({
+            "issue_desc": issue_desc,
+            "rca": rca,
+            "resolution": resolution,
+            "workaround": workaround
+        })
         return response.content

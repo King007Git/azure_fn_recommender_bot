@@ -33,6 +33,12 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# --- Data files
+data/
+data/*.csv
+
+# --- notebooks ---
+*.ipynb
 
 # -- embedding model --
 model/

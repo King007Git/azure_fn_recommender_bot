@@ -17,11 +17,29 @@ export const api = {
     return res.json();
   },
   
-  feedback: async (query: string, short_description: string, resolution: string) => {
+  feedback: async (
+    query: string, 
+    short_description: string, 
+    resolution: string,
+    desc: string = "",
+    priority: string = "P4",
+    issue_desc: string = "",
+    rca: string = "",
+    workaround: string = ""
+  ) => {
     const res = await fetch(`${BASE_URL}/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, short_description, resolution })
+      body: JSON.stringify({ 
+        query, 
+        short_description, 
+        resolution,
+        desc,
+        priority,
+        issue_desc,
+        rca,
+        workaround
+      })
     });
     
     if (!res.ok) throw new Error('Feedback submission failed');
@@ -39,11 +57,11 @@ export const api = {
     return res.text();
   },
 
-  generateAnswer: async (resolution: string) => {
+  generateAnswer: async (issue_desc: string, rca: string, resolution: string, workaround: string) => {
     const res = await fetch(`${BASE_URL}/generate_answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ resolution })
+      body: JSON.stringify({ issue_desc, rca, resolution, workaround })
     });
     
     if (!res.ok) throw new Error('Generation failed');

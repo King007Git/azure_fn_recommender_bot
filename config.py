@@ -9,6 +9,6 @@ class Settings:
         self.GOOGLE_API_KEY = os.getenv("GOOGLE_GENAI_KEY", "google-genai-key")
         self.EMBEDDING_MODEL = os.path.join(BASE_DIR, "model", "all-MiniLM-L6-v2")
         self.GOOGLE_MODEL = "gemini-3-flash-preview"
-        self.FILE_PATH = "data/Synthetic_incidents.csv"
+        self.FILE_PATH = "data/synthetic_servicenow_incidents_1year.csv"
 
 settings = Settings()

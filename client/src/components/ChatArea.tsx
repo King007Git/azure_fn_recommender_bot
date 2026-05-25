@@ -1,24 +1,27 @@
 import { useState, useRef, useEffect } from "react"
-import { Send, ThumbsUp, ThumbsDown, Edit2, Bot } from "lucide-react"
+import { Send, Edit2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
-import FeedbackModal from "./FeedbackModal"
-import AiAnswerModal from "./AiAnswerModal"
-
+import TicketActionModal from "./TicketActionModal"
 interface ChatAreaProps {
   topK: number
   threshold: number
 }
 
 interface Option {
-  id: string // Added ID
+  id: string
   score: number
   short_description: string
   resolution: string
+  desc: string
+  priority: string
+  issue_desc: string
+  rca: string
+  workaround: string
 }
 
 interface Message {
@@ -29,16 +32,10 @@ interface Message {
   error?: string
 }
 
-interface FeedbackState {
+interface DetailModalState {
   isOpen: boolean
+  option: Option | null
   query: string
-  shortDesc?: string
-  resolution?: string
-}
-
-interface AiModalState {
-  isOpen: boolean
-  resolution: string
 }
 
 export default function ChatArea({ topK, threshold }: ChatAreaProps) {
@@ -46,13 +43,10 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
   const [input, setInput] = useState<string>("")
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  const [feedbackState, setFeedbackState] = useState<FeedbackState>({
+  const [detailModal, setDetailModal] = useState<DetailModalState>({
     isOpen: false,
+    option: null,
     query: "",
-  })
-  const [aiModalState, setAiModalState] = useState<AiModalState>({
-    isOpen: false,
-    resolution: "",
   })
 
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null)
@@ -92,11 +86,18 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
     }
   }
 
-  // Card Action Handlers
-  const handleQuickFeedback = async (query: string, resolution: string) => {
+  const handleQuickFeedback = async (query: string, opt: Option) => {
     try {
-      // Uses user query as both query AND short desc for quick feedback
-      const responseText = await api.feedback(query, query, resolution)
+      const responseText = await api.feedback(
+        query,
+        opt.short_description,
+        opt.resolution,
+        opt.desc,
+        opt.priority,
+        opt.issue_desc,
+        opt.rca,
+        opt.workaround
+      )
       toast.success(responseText)
     } catch (err) {
       toast.error("Failed to submit quick feedback.")
@@ -105,11 +106,59 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
 
   const handleRemoveDoc = async (id: string) => {
     try {
-      const res = await api.remove([id])
+      await api.remove([id])
       toast.success("Document successfully removed from index.")
     } catch (err) {
       toast.error("Failed to remove document.")
     }
+  }
+
+  const handleGenerateAi = async (
+    issue_desc: string,
+    rca: string,
+    resolution: string,
+    workaround: string
+  ): Promise<string> => {
+    if (api.generateAnswer) {
+      try {
+        const res = await api.generateAnswer(
+          issue_desc,
+          rca,
+          resolution,
+          workaround
+        )
+
+        if (typeof res === "string") return res
+
+        if (res?.generative_answer && Array.isArray(res.generative_answer)) {
+          const textBlock = res.generative_answer.find(
+            (item: any) => item.type === "text"
+          )
+          if (textBlock && textBlock.text) {
+            return textBlock.text
+          }
+        }
+
+        return (
+          res?.text ||
+          res?.generative_answer ||
+          "No valid response text could be extracted."
+        )
+      } catch (error) {
+        console.error("Error formatting AI response:", error)
+        return "An error occurred while processing the AI response."
+      }
+    }
+
+    return new Promise((resolve) => {
+      setTimeout(
+        () =>
+          resolve(
+            "AI analysis simulated... (Add your backend endpoint to see real results!)"
+          ),
+        2000
+      )
+    })
   }
 
   return (
@@ -139,103 +188,44 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
                     {msg.options?.map((opt, i) => (
                       <Card
                         key={i}
-                        className="group relative w-full overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-lg shadow-black/10 backdrop-blur-lg transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.01] hover:border-cyan-300/40 hover:bg-white/15 hover:shadow-2xl hover:shadow-cyan-500/20"
+                        onClick={() =>
+                          setDetailModal({
+                            isOpen: true,
+                            option: opt,
+                            query: msg.query || "",
+                          })
+                        }
+                        className="group relative w-full cursor-pointer overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-lg shadow-black/10 backdrop-blur-lg transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.01] hover:border-cyan-300/40 hover:bg-white/15 hover:shadow-2xl hover:shadow-cyan-500/20"
                       >
                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent" />
-                        <CardContent className="relative p-4 pt-8 pb-2">
+                        <CardContent className="relative p-4 pt-8 pb-4">
                           <Badge
                             variant="secondary"
-                            className={`absolute top-2 right-2 text-xs text-white ${
+                            className={`absolute top-2 left-2 flex items-center gap-2 px-2.5 py-1 text-xs text-white ${
                               opt.score * 100 > 70
                                 ? "bg-green-500 hover:bg-green-600"
                                 : "bg-yellow-500 hover:bg-yellow-600"
                             }`}
                           >
-                            Score: {(opt.score * 100).toFixed(1)}%
-                          </Badge>
-                          <Badge
-                            className={`absolute top-2 left-2 flex h-6 w-6 items-center justify-center rounded-full p-0 text-xs ${
-                              opt.score * 100 > 70
-                                ? "bg-green-500 hover:bg-green-600"
-                                : "bg-yellow-500 hover:bg-yellow-600"
-                            }`}
-                          >
-                            {String.fromCharCode(65 + i)}
+                            <span className="text-sm font-bold">
+                              {String.fromCharCode(65 + i)}
+                            </span>
+                            <div className="h-3.5 w-[1px] rounded-full bg-white/40" />
+                            <span>Score: {(opt.score * 100).toFixed(1)}%</span>
                           </Badge>
 
-                          <div className="mb-4 space-y-2">
+                          <div className="space-y-2">
                             <p className="text-sm font-semibold text-foreground">
                               {opt.short_description}
                             </p>
-                            <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-                              {opt.resolution}
+                            <p className="line-clamp-2 text-sm text-muted-foreground">
+                              {opt.desc}
                             </p>
-                          </div>
-
-                          {/* Action Bar for each Card */}
-                          <div className="mt-2 flex items-center justify-end gap-1 border-t pt-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2 text-muted-foreground hover:text-green-600"
-                              onClick={() =>
-                                handleQuickFeedback(
-                                  msg.query || "",
-                                  opt.resolution
-                                )
-                              }
-                              title="Thumbs Up - Good Match"
-                            >
-                              <ThumbsUp className="h-4 w-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2 text-muted-foreground hover:text-red-600"
-                              onClick={() => handleRemoveDoc(opt.id)}
-                              title="Thumbs Down - Remove from Index"
-                            >
-                              <ThumbsDown className="h-4 w-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2 text-muted-foreground hover:text-blue-600"
-                              onClick={() =>
-                                setFeedbackState({
-                                  isOpen: true,
-                                  query: msg.query || "",
-                                  shortDesc: opt.short_description,
-                                  resolution: opt.resolution,
-                                })
-                              }
-                              title="Edit and Submit Feedback"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 px-2 text-muted-foreground hover:text-purple-600"
-                              onClick={() =>
-                                setAiModalState({
-                                  isOpen: true,
-                                  resolution: opt.resolution,
-                                })
-                              }
-                              title="Generate AI Steps"
-                            >
-                              <Bot className="h-4 w-4" />
-                            </Button>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
 
-                    {/* General Bottom Feedback Button */}
                     {msg.options && msg.options.length > 0 && (
                       <div className="flex justify-end pt-2">
                         <Button
@@ -243,8 +233,9 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
                           size="sm"
                           className="gap-2"
                           onClick={() =>
-                            setFeedbackState({
+                            setDetailModal({
                               isOpen: true,
+                              option: null,
                               query: msg.query || "",
                             })
                           }
@@ -275,10 +266,8 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
         <form onSubmit={handleSend} className="relative w-full">
           <Input
             value={input}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setInput(e.target.value)
-            }
-            placeholder="Describe your issue (e.g., Cant log onto VMWare...)"
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Describe your issue (e.g., High CPU on AIX...)"
             className="h-14 rounded-full bg-background pr-12 shadow-sm"
           />
           <Button
@@ -292,18 +281,16 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
         </form>
       </div>
 
-      <FeedbackModal
-        isOpen={feedbackState.isOpen}
-        onClose={() => setFeedbackState({ isOpen: false, query: "" })}
-        originalQuery={feedbackState.query}
-        initialShortDesc={feedbackState.shortDesc}
-        initialResolution={feedbackState.resolution}
-      />
-
-      <AiAnswerModal
-        isOpen={aiModalState.isOpen}
-        onClose={() => setAiModalState({ isOpen: false, resolution: "" })}
-        resolution={aiModalState.resolution}
+      <TicketActionModal
+        isOpen={detailModal.isOpen}
+        onClose={() =>
+          setDetailModal({ isOpen: false, option: null, query: "" })
+        }
+        option={detailModal.option}
+        query={detailModal.query}
+        onQuickFeedback={handleQuickFeedback}
+        onRemoveDoc={handleRemoveDoc}
+        onGenerateAi={handleGenerateAi}
       />
     </div>
   )

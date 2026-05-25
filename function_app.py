@@ -37,8 +37,22 @@ def feedback_endpoint(req: func.HttpRequest) -> func.HttpResponse:
         query = req_json.get("query")
         short_desc = req_json.get("short_description")
         resolution = req_json.get("resolution")
+        desc = req_json.get("desc", "")
+        priority = req_json.get("priority", "P4")
+        issue_desc = req_json.get("issue_desc", "")
+        rca = req_json.get("rca", "")
+        workaround = req_json.get("workaround", "")
         
-        agent.feedback(query, short_desc, resolution)
+        agent.feedback(
+            query=query, 
+            short_desc=short_desc, 
+            resolution=resolution,
+            desc=desc,
+            priority=priority,
+            issue_desc=issue_desc,
+            rca=rca,
+            workaround=workaround
+        )
         return func.HttpResponse("Feedback processed. Query rank boosted.", status_code=200)
     except Exception as e:
         return func.HttpResponse(f"Feedback Error: {str(e)}", status_code=500)
@@ -61,12 +75,19 @@ def remove_endpoint(req: func.HttpRequest) -> func.HttpResponse:
 def generate_answer_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     try:
         req_json = req.get_json()
-        resolution = req_json.get("resolution")
-        
-        if not resolution:
-             return func.HttpResponse("Missing 'resolution' in request.", status_code=400)
+        resolution = req_json.get("resolution", "")
+        issue_desc = req_json.get("issue_desc", "")
+        rca = req_json.get("rca", "")
+        workaround = req_json.get("workaround", "")
+        if not resolution and not issue_desc:
+             return func.HttpResponse("Missing required ticket details (resolution or issue_desc) in request.", status_code=400)
              
-        answer = agent.generate_answer(resolution)
+        answer = agent.generate_answer(
+            issue_desc=issue_desc, 
+            rca=rca, 
+            resolution=resolution, 
+            workaround=workaround
+        )
         return func.HttpResponse(json.dumps({"generative_answer": answer}), mimetype="application/json")
     except Exception as e:
          return func.HttpResponse(f"Generation Error: {str(e)}", status_code=500)
