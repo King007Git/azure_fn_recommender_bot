@@ -246,11 +246,11 @@ export default function TicketActionModal({
                 onClose()
               }}
             >
-              <ThumbsDown className="mr-2 h-4 w-4" /> Remove
+              <ThumbsDown className="mr-2 h-4 w-4" /> Bad Match
             </Button>
             <Button
               variant="outline"
-              className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              className="hidden text-blue-600 hover:bg-blue-50 hover:text-blue-700"
               onClick={() => setMode("edit")}
             >
               <Edit2 className="mr-2 h-4 w-4" /> Edit
@@ -266,7 +266,7 @@ export default function TicketActionModal({
               ) : (
                 <Bot className="mr-2 h-4 w-4" />
               )}
-              {isAiLoading ? "Generating..." : "AI Steps"}
+              {isAiLoading ? "Generating..." : "AI Answer"}
             </Button>
           </div>
         </DialogContent>

@@ -198,30 +198,41 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
                         className="group relative w-full cursor-pointer overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-lg shadow-black/10 backdrop-blur-lg transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.01] hover:border-cyan-300/40 hover:bg-white/15 hover:shadow-2xl hover:shadow-cyan-500/20"
                       >
                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent" />
-                        <CardContent className="relative p-4 pt-8 pb-4">
-                          <Badge
-                            variant="secondary"
-                            className={`absolute top-2 left-2 flex items-center gap-2 px-2.5 py-1 text-xs text-white ${
-                              opt.score * 100 > 70
-                                ? "bg-green-500 hover:bg-green-600"
-                                : "bg-yellow-500 hover:bg-yellow-600"
-                            }`}
-                          >
-                            <span className="text-sm font-bold">
-                              {String.fromCharCode(65 + i)}
-                            </span>
-                            <div className="h-3.5 w-[1px] rounded-full bg-white/40" />
-                            <span>Score: {(opt.score * 100).toFixed(1)}%</span>
-                          </Badge>
+                        <CardContent className="relative p-4">
+                          <div className="mb-2 flex items-center gap-3">
+                            <Badge
+                              variant="secondary"
+                              className={`flex shrink-0 items-center gap-2 px-2.5 py-1 text-xs text-white ${
+                                opt.score * 100 > 70
+                                  ? "bg-green-500 hover:bg-green-600"
+                                  : "bg-yellow-500 hover:bg-yellow-600"
+                              }`}
+                            >
+                              <span className="text-sm font-bold">
+                                {String.fromCharCode(65 + i)}
+                              </span>
+                              <div className="h-3.5 w-[1px] rounded-full bg-white/40" />
+                              <span>
+                                Score: {(opt.score * 100).toFixed(1)}%
+                              </span>
+                            </Badge>
 
-                          <div className="space-y-2">
-                            <p className="text-sm font-semibold text-foreground">
+                            <p className="line-clamp-1 text-sm font-semibold text-foreground">
                               {opt.short_description}
                             </p>
-                            <p className="line-clamp-2 text-sm text-muted-foreground">
-                              {opt.desc}
-                            </p>
                           </div>
+                          <p className="text-sm text-muted-foreground">
+                            {opt.desc?.split(" ").length > 10 ? (
+                              <>
+                                {opt.desc.split(" ").slice(0, 10).join(" ")}
+                                <span className="ml-1 font-medium text-cyan-400 transition-colors hover:text-cyan-300 hover:underline">
+                                  ... more
+                                </span>
+                              </>
+                            ) : (
+                              opt.desc
+                            )}
+                          </p>
                         </CardContent>
                       </Card>
                     ))}
