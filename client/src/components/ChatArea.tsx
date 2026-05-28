@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react"
 import { Send, Edit2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
@@ -182,7 +181,6 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
               </p>
             </div>
 
-            {/* Suggestions anchored to the bottom */}
             <div className="mt-auto w-full pb-2 pt-8">
               <h3 className="mb-4 ml-1 text-[15px] font-semibold text-slate-600/90">
                 Suggestions on what to ask AURA
@@ -202,100 +200,97 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
           </div>
         ) : (
           messages.map((msg, idx) => (
-            <div key={idx} className="flex flex-col w-full">
+            <div key={idx} className="flex flex-col w-full mb-2">
               {msg.role === "user" ? (
-                <div className="flex flex-col items-start mb-2">
-                  <span className="mb-2 ml-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                // USER MESSAGE - Aligned to the Right
+                <div className="flex flex-col items-start w-full">
+                  <span className="mb-2 mr-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     ME
                   </span>
-                  <div className="max-w-[80%] rounded-3xl bg-white px-6 py-3.5 text-[15px] font-medium text-slate-800 shadow-sm border border-slate-100">
+                  <div className="max-w-[80%] rounded-2xl rounded-tl-sm bg-white px-5 py-4 text-[15px] text-slate-800 shadow-sm border border-slate-100">
                     {msg.content}
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-stretch w-full animate-in slide-in-from-bottom-2">
-                  <span className="mb-2 ml-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                // AI MESSAGE - Aligned to the Left
+                <div className="flex flex-col items-end w-full animate-in slide-in-from-bottom-2">
+                  <span className="mb-2 ml-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     AURA
                   </span>
                   {msg.error ? (
                     <div className="text-sm text-destructive pl-2">{msg.error}</div>
                   ) : (
-                    <div className="w-full space-y-3 rounded-[2rem] bg-white/40 p-4 shadow-sm backdrop-blur-md border border-white/60">
-                      {msg.options && msg.options.length === 0 && (
-                        <div className="text-sm text-slate-500 p-2">
-                          No relevant solutions found.
-                        </div>
-                      )}
+                    <div className="max-w-[90%] w-full space-y-4 rounded-2xl rounded-tr-sm bg-white p-5 shadow-sm border border-white/60">
+                      {msg.options && msg.options.length === 0 ? (
+                        <p className="text-[15px] text-slate-700">
+                          I couldn't find any relevant solutions for that query.
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-[15px] text-slate-700">
+                            Great question! I found a few relevant solutions for your issue. Here are the best matches:
+                          </p>
+                          
+                          <div className="flex flex-col space-y-4 mt-2">
+                            {msg.options?.map((opt, i) => (
+                              <div key={i} className="flex items-start gap-3 text-[15px] text-slate-700">
+                                <span className="font-medium mt-0.5 min-w-[20px] text-slate-500">{i + 1}.</span>
+                                <div>
+                                  <div className="flex items-center flex-wrap gap-2 mb-1">
+                                    <Badge
+                                      variant="secondary"
+                                      className={`px-2 py-0.5 text-[11px] font-semibold text-white border-0 ${
+                                        opt.score * 100 > 60
+                                          ? "bg-amber-500"
+                                          : "bg-slate-500"
+                                      }`}
+                                    >
+                                      Score: {(opt.score * 100).toFixed(1)}%
+                                    </Badge>
+                                    <span className="font-bold text-slate-800">
+                                      {opt.short_description}
+                                    </span>
+                                  </div>
+                                  <p className="text-[15px] leading-relaxed text-slate-600">
+                                    {opt.desc?.split(" ").slice(0, 10).join(" ")}
+                                    <button
+                                      onClick={() =>
+                                        setDetailModal({
+                                          isOpen: true,
+                                          option: opt,
+                                          query: msg.query || "",
+                                        })
+                                      }
+                                      className="ml-1 font-semibold text-[#a855f7] hover:text-purple-600 hover:underline focus:outline-none transition-colors"
+                                    >
+                                      ...more
+                                    </button>
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
 
-                      {msg.options?.map((opt, i) => (
-                        <Card
-                          key={i}
-                          onClick={() =>
-                            setDetailModal({
-                              isOpen: true,
-                              option: opt,
-                              query: msg.query || "",
-                            })
-                          }
-                          className="group relative w-full cursor-pointer overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-md"
-                        >
-                          <CardContent className="p-5">
-                            <div className="mb-2.5 flex items-center gap-3">
-                              <Badge
-                                variant="secondary"
-                                className={`flex shrink-0 items-center gap-2 px-3 py-1 text-[11px] text-white border-0 ${
-                                  opt.score * 100 > 70
-                                    ? "bg-emerald-500 hover:bg-emerald-600"
-                                    : "bg-amber-500 hover:bg-amber-600"
-                                }`}
+                          {msg.options && msg.options.length > 0 && (
+                            <div className="flex justify-end pt-3 mt-2 border-t border-slate-100">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                                onClick={() =>
+                                  setDetailModal({
+                                    isOpen: true,
+                                    option: null,
+                                    query: msg.query || "",
+                                  })
+                                }
                               >
-                                <span className="text-sm font-bold">
-                                  {String.fromCharCode(65 + i)}
-                                </span>
-                                <div className="h-3.5 w-[1px] bg-white/50" />
-                                <span className="font-medium">
-                                  Score: {(opt.score * 100).toFixed(1)}%
-                                </span>
-                              </Badge>
-
-                              <p className="line-clamp-1 text-[15px] font-bold text-slate-700">
-                                {opt.short_description}
-                              </p>
+                                <Edit2 className="h-4 w-4" />
+                                Provide Custom Feedback
+                              </Button>
                             </div>
-                            <p className="text-[14px] text-slate-500">
-                              {opt.desc?.split(" ").length > 10 ? (
-                                <>
-                                  {opt.desc.split(" ").slice(0, 10).join(" ")}
-                                  <span className="ml-1 font-semibold text-[#a855f7] transition-colors hover:text-purple-600">
-                                    ... more
-                                  </span>
-                                </>
-                              ) : (
-                                opt.desc
-                              )}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ))}
-
-                      {msg.options && msg.options.length > 0 && (
-                        <div className="flex justify-end pt-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2 border-white/60 bg-white/60 backdrop-blur-md hover:bg-white text-slate-600"
-                            onClick={() =>
-                              setDetailModal({
-                                isOpen: true,
-                                option: null,
-                                query: msg.query || "",
-                              })
-                            }
-                          >
-                            <Edit2 className="h-4 w-4" />
-                            Provide Custom Feedback
-                          </Button>
-                        </div>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
@@ -305,12 +300,17 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
           ))
         )}
 
-        {/* Loading Indicator */}
+        {/* Loading Indicator - Aligned to the Left */}
         {isLoading && (
-          <div className="flex animate-pulse items-center gap-2 text-sm text-slate-400 pl-2">
-            <div className="h-2 w-2 rounded-full bg-slate-400" />
-            <div className="h-2 w-2 rounded-full bg-slate-400 delay-75" />
-            <div className="h-2 w-2 rounded-full bg-slate-400 delay-150" />
+          <div className="flex flex-col items-start w-full">
+             <span className="mb-2 ml-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+               AURA
+             </span>
+             <div className="flex animate-pulse items-center gap-2 rounded-2xl rounded-tl-sm bg-white p-5 shadow-sm border border-white/60">
+              <div className="h-2 w-2 rounded-full bg-slate-300" />
+              <div className="h-2 w-2 rounded-full bg-slate-300 delay-75" />
+              <div className="h-2 w-2 rounded-full bg-slate-300 delay-150" />
+            </div>
           </div>
         )}
 
