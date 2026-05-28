@@ -8,7 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { api } from "@/lib/api"
-import { toast } from "sonner" // Using Sonner for toasts
+import { toast } from "sonner" 
 
 interface NavbarProps {
   topK: number
@@ -42,7 +42,7 @@ export default function Navbar({
   }
 
   return (
-    <nav className="flex h-16 shrink-0 items-center justify-between border-b border-white/20 bg-gradient-to-r from-[#06a1d5] to-[#83defc] px-4 backdrop-blur-xl">
+    <nav className="flex h-16 shrink-0 items-center justify-between border-b border-white/20 bg-transparent px-4">
       <div className="flex items-center gap-4">
         <div className="flex h-full items-center">
           <img
@@ -51,20 +51,17 @@ export default function Navbar({
             className="h-14 w-auto object-contain"
           />
         </div>
-        {/* <div className="h-8 w-px bg-white/60" />
-        <div className="word-spacing-wide text-xl font-bold tracking-widest text-white">
-          PRIMARK AURA
-        </div>         */}
       </div>
 
       <Popover>
         <PopoverTrigger asChild>
+          {/* Added a visible background, border, and stronger text color */}
           <Button
             variant="ghost"
             size="icon"
-            className="group hover:bg-[#06a1d5]/10 hover:text-[#06a1d5]"
+            className="group bg-white/40 border border-white/50 shadow-sm hover:bg-white/60" 
           >
-            <Settings className="h-5 w-5 text-white transition-colors group-hover:text-[#06a1d5]" />
+            <Settings className="h-5 w-5 text-slate-900 transition-colors" />
           </Button>
         </PopoverTrigger>
 
