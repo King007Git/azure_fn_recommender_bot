@@ -51,10 +51,10 @@ export default function Navbar({
             className="h-14 w-auto object-contain"
           />
         </div>
-        <div className="h-8 w-px bg-white/60" />
+        {/* <div className="h-8 w-px bg-white/60" />
         <div className="word-spacing-wide text-xl font-bold tracking-widest text-white">
           PRIMARK AURA
-        </div>
+        </div>         */}
       </div>
 
       <Popover>
