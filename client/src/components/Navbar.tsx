@@ -42,7 +42,7 @@ export default function Navbar({
   }
 
   return (
-    <nav className="flex h-16 items-center justify-between border-b bg-gradient-to-r from-[#06a1d5] to-[#83defc] px-4">
+    <nav className="flex h-16 shrink-0 items-center justify-between border-b border-white/20 bg-gradient-to-r from-[#06a1d5] to-[#83defc] px-4 backdrop-blur-xl">
       <div className="flex items-center gap-4">
         <div className="flex h-full items-center">
           <img
