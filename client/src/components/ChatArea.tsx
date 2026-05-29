@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import TicketActionModal from "./TicketActionModal"
+import SimilarIncidentsModal from "./SimilarIncidentsModal"
 
 interface ChatAreaProps {
   topK: number
@@ -40,9 +41,9 @@ interface DetailModalState {
 }
 
 const SUGGESTIONS = [
-  "Question 1?",
-  "Question 2?",
-  "Question 3?",
+  "Database connection pool exhausted during peak hours",
+  "High CPU Demand",
+  "Automic - User unable to access application due to authentication timeout",
 ]
 
 export default function ChatArea({ topK, threshold }: ChatAreaProps) {
@@ -54,6 +55,11 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
     isOpen: false,
     option: null,
     query: "",
+  })
+
+  const [similarModal, setSimilarModal] = useState<{isOpen: boolean, query: string}>({
+    isOpen: false,
+    query: ""
   })
 
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null)
@@ -347,6 +353,15 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
         onQuickFeedback={handleQuickFeedback}
         onRemoveDoc={handleRemoveDoc}
         onGenerateAi={handleGenerateAi}
+        onFindSimilar={(shortDescription) => {
+          setDetailModal({ isOpen: false, option: null, query: "" })
+          setSimilarModal({ isOpen: true, query: shortDescription })
+        }}
+      />
+      <SimilarIncidentsModal
+        isOpen={similarModal.isOpen}
+        onClose={() => setSimilarModal({ isOpen: false, query: "" })}
+        query={similarModal.query}
       />
     </div>
   )

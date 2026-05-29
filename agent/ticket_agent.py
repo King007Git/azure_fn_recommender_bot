@@ -45,8 +45,9 @@ class TicketAgent:
         for match in res["matches"]:
             if match["score"] >= state["threshold"]:
                 valid_matches.append({
-                    "id": match["id"], # Returning the ID so you can easily reference it for removal later
+                    "id": match["id"],
                     "score": match["score"],
+                    "number": match["metadata"].get("number",""),
                     "short_description": match["metadata"].get("short_description", ""),
                     "resolution": match["metadata"].get("resolution", ""),
                     "desc": match['metadata'].get('description',''),
@@ -72,6 +73,7 @@ class TicketAgent:
             text_to_embed = str(row['Short Description'])
             metadata = {
                 "short_description": text_to_embed,
+                "number": str(row.get('Incident Number', '')),
                 "description": str(row.get('Description', '')),
                 "priority": str(row.get('Priority', '')),
                 "resolution": str(row.get('Resolution Notes', '')),
