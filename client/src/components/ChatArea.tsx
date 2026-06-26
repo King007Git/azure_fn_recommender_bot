@@ -80,7 +80,7 @@ export default function ChatArea({ topK, threshold }: ChatAreaProps) {
     setIsLoading(true)
 
     try {
-      const response = await api.retrieve(userMessage, topK, threshold)
+      const response = await api.retriveUnique(userMessage, topK, threshold)
       setMessages((prev) => [
         ...prev,
         {

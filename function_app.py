@@ -30,6 +30,20 @@ def retrieve_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         return func.HttpResponse(f"Retrieval Error: {str(e)}", status_code=500)
 
+@app.route(route="retrieve_unique", methods=["POST"])
+def retrieve_unique_endpoint(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        req_json = req.get_json()
+        query = req_json.get("query")
+        
+        top_k = req_json.get("top_k", 10) 
+        threshold = req_json.get("threshold", 0.90) 
+        
+        results = agent.retrieve_unique(query, top_k, threshold)
+        return func.HttpResponse(json.dumps({"data": results}), mimetype="application/json")
+    except Exception as e:
+        return func.HttpResponse(f"Unique Retrieval Error: {str(e)}", status_code=500)
+
 @app.route(route="feedback", methods=["POST"])
 def feedback_endpoint(req: func.HttpRequest) -> func.HttpResponse:
     try:

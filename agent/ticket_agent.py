@@ -97,6 +97,27 @@ class TicketAgent:
         result = self.app.invoke(initial_state)
         return result["results"]
 
+    def retrieve_unique(self, query: str, top_k: int, threshold: float) -> list:
+        raw_results = self.retrieve(query, 30, threshold)
+        sorted_results = sorted(raw_results, key=lambda x: x["score"], reverse=True)
+        
+        unique_results = []
+        seen_descriptions = set()
+        
+        for ticket in sorted_results:
+            desc = str(ticket.get("short_description") or "").strip().lower()
+            
+            if desc in seen_descriptions:
+                continue
+                
+            seen_descriptions.add(desc)
+            unique_results.append(ticket)
+            
+            if len(unique_results) >= top_k:
+                break
+                
+        return unique_results
+
     def feedback(self, query: str, short_desc: str, resolution: str, desc: str, priority: str, issue_desc: str, rca: str, workaround: str):
         query_vec = self.embeddings.embed_query(query)
         

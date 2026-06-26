@@ -42,3 +42,5 @@ data/*.csv
 
 # -- embedding model --
 model/
+
+model_download cross-encoder.py

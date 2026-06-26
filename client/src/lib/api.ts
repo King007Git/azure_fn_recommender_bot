@@ -6,6 +6,16 @@ export const api = {
     if (!res.ok) throw new Error('Ingestion failed');
     return res.text();
   },
+
+  retriveUnique: async (query: string, top_k: number, threshold: number) => {
+    const res = await fetch(`${BASE_URL}/retrieve_unique` ,{
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, top_k, threshold: threshold / 100 })
+    });
+    if (!res.ok) throw new Error('Unique Retrieval failed');
+    return res.json();
+  },
   
   retrieve: async (query: string, top_k: number, threshold: number) => {
     const res = await fetch(`${BASE_URL}/retrieve`, {

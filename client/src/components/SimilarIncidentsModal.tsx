@@ -18,7 +18,7 @@ interface SimilarIncidentsModalProps {
 
 interface Option {
   id: string
-  number: string
+  number: string  
   short_description: string
   score: number
 }
